@@ -1,0 +1,49 @@
+//treeres.rc
+
+#include <windows.h>
+#include "treeres.h"
+//////////////////////////////////////////////////////////
+//               DIALOG
+//--------------------------------------------------------
+TREENODEDLG DIALOG DISCARDABLE 32,32,180,100   
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION
+FONT 8, "MS Sans Serif" 
+CAPTION "Enter Tree Node"
+BEGIN
+	DEFPUSHBUTTON "Search",IDOK,      115, 20, 32, 14
+	DEFPUSHBUTTON "AddNod",IDC_ADD,   115, 35, 32, 14
+	DEFPUSHBUTTON "Delete",IDC_DEL,   115, 50, 32, 14
+	DEFPUSHBUTTON "Cancel",IDCANCEL,  115, 65, 32, 14
+
+	LTEXT "Tree Node", IDC_STATIC, 30, 12, 80, 8
+	EDITTEXT  IDC_EDIT, 30,30,80,14
+	LTEXT "Enter a node value",IDC_STATIC,30,52,80,8
+END
+//---------------------------------------------------------
+
+
+//////////////////////////////////////////////////////////
+//   MENU
+//--------------------------------------------------------
+IDR_TREE_MENU MENU DISCARDABLE
+BEGIN
+	POPUP "&Tree"
+	BEGIN
+		MENUITEM "&ShowTree", IDM_TREE_SHOW
+		MENUITEM "&TreeNode", IDM_TREE_NODE
+		MENUITEM "&NewTree", IDM_TREE_NEW
+		POPUP "&TravelShowTree..."
+			BEGIN
+				MENUITEM "preOrderTraversal",  IDM_TREE_PRE
+				MENUITEM "innerOrderTraversal", IDM_TREE_INNER
+				MENUITEM "postOrderTraversal", IDM_TREE_POST
+				MENUITEM "layerOrderTraversal", IDM_TREE_LAYER
+
+			END
+		MENUITEM "&Exit", IDM_TREE_EXIT
+	END	
+END
+//////////////////////////////////////////////////////////
+//   ICON
+//--------------------------------------------------------
+IDI_TREE_ICON ICON DISCARDABLE "wintree.ico"
