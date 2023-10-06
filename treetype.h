@@ -2,7 +2,9 @@
 #define _TREE_TYPES_H_
 
 #define QueueMax 10000
+
 struct biTreeNode;
+
 struct element{
 	int val, pos, count;
 	struct biTreeNode* pnode;
@@ -21,4 +23,5 @@ typedef struct{
 	int rear;
 	int len;
 }Queue;
+
 #endif

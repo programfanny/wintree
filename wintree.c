@@ -77,12 +77,11 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static int pathlen;
 	static RECT rect ;
 	static HINSTANCE hInstance; 
-	static int *nums,numsSize;
+	static int numsSize,TreeNodeCount;
 	static int *arrA, *arrB, *arrC, *arrD;
 	static int returnSizeA = 0,returnSizeB = 0,returnSizeC = 0,returnSizeD = 0;
-	static pBiTree root,pnode;
+	static pBiTree root=NULL,pnode,qnode;
 	//static int depth;
-	static TreeNode *Data;
 	static pTreeNode *pData;
 	static BOOL ti,showtree;
 	switch (message)
@@ -94,16 +93,20 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (hIcon)
 		{
     		SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-    		//SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		}
-		srand(time(0));
-		//depth = 
-		InitTree(&root, &Data, &pData,&nums,&numsSize);
+		//srand(time(0));
+		TreeNodeCount=0;
+		InitTree(&root,  &numsSize, &pData, &TreeNodeCount);
+
 		ti=FALSE,showtree=TRUE;
 		return 0 ;
 	case WM_PAINT:
 		hdc = BeginPaint (hwnd, &ps) ;
 		GetClientRect(hwnd,&rect);
+		for(int i=0;i<TreeNodeCount;i++){
+			sprintf(buf,"%p %d %d %d",pData[i],i,pData[i]->val,pData[i]->pos);
+			TextOut(hdc,30,30+i*20,buf,strlen(buf));
+		}
 		SetTextColor(hdc,RGB(0,180,250));	
 		DispArray(hdc,650,30," pre ",arrA,returnSizeA);
 		DispArray(hdc,700,30,"inner",arrB,returnSizeB);
@@ -115,7 +118,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			sprintf(buf,"[%d] ",arrD[2*i+1]);
 			TextOut(hdc,830,50+i*20,buf,strlen(buf));
 		}
-
+		
 		DrawTreeBackground(hwnd);
 		if(showtree)DrawBiTree(hwnd,root,1);
 
@@ -141,8 +144,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 					KillTimer(hwnd,ID_TREE_TIMER);
 				}
 				ti=!ti;
-				break;
-	
+				break;	
 			case VK_RETURN:
 				//MessageBox(NULL,"New Tree","OKOK",MB_OK);
 				if(arrA){free(arrA);}
@@ -150,11 +152,8 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				if(arrC){free(arrC);}
 				if(arrD){free(arrD);}
 				if(root){DestroyTree(root);}
-				if(Data){free(Data);Data=NULL;}
 				if(pData){free(pData);pData=NULL;}
-				if(nums){free(nums);nums=NULL;}
-				//depth = 
-				InitTree(&root, &Data, &pData,&nums,&numsSize);
+				InitTree(&root,  &numsSize, &pData, &TreeNodeCount);
 				ti=TRUE;showtree=TRUE;
 			case VK_F5:
 				arrA =   preOrderTraversal(root, &returnSizeA);
@@ -167,6 +166,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		return 0;	
 	case WM_LBUTTONDOWN:
 		x=LOWORD(lParam);y=HIWORD(lParam);
+
 		if(650<x && x<700 && 30<y && y<50){
 			PostMessage(hwnd,WM_COMMAND,IDM_TREE_PRE,0);
 		}else if(700<x && x<750 && 30<y && y<50){
@@ -186,7 +186,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(0<d && d<7 && s%2==0){
 				pos=(s+ss)/2;
 				num=-1;
-				for(int i=0;i<numsSize;i++){
+				for(int i=0;i<TreeNodeCount;i++){
 					if(pData[i]->pos==pos){num=i;break;}
 				}
 				//pnode = SearchTreeNode(root,nodeValue);
@@ -195,10 +195,6 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				if(num>=0){
 					if(patharr)free(patharr);
 					patharr = ShowPath(hwnd,pos,&pathlen);
-					for(int i=0;i<pathlen;i++){
-						sprintf(buf,"(%ld %ld)",patharr[i].x,patharr[i].y);
-						TextOut(hdc,880,30+20*i,buf,strlen(buf));
-					}
 				}else{
 					sprintf(buf,"empty tree node.");
 					MessageBox(NULL,buf,"empty tree node",MB_OK);
@@ -225,7 +221,8 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				switch(num){
 					case IDOK:
 						value=atoi(buf);
-						pnode = SearchTreeNode(root,value);
+						pos=1;
+						pnode = SearchTreeNode(root,&qnode,value,&pos);
 						if(pnode){
 							if(patharr)free(patharr);
 							patharr = ShowPath(hwnd,pnode->pdata->pos,&pathlen);
@@ -241,25 +238,19 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 						break;
 					case IDC_ADD:
 						value=atoi(buf);
-						//InsertDataToTree(root, value, pData, &numsSize);
-						pnode = SearchTreeNode(root,value);
+						pos=1;
+						pnode = SearchTreeNode(root,&qnode,value,&pos);
 						if(pnode==NULL){
-							numsSize++;
-							pTreeNode *pNewData=(pTreeNode*)malloc(numsSize*sizeof(pTreeNode));
-							memcpy(pNewData,pData,(numsSize-1)*sizeof(pTreeNode));
-							free(pData);
-							pNewData[numsSize-1]=(pTreeNode)malloc(sizeof(TreeNode));
-							pNewData[numsSize-1]->val=value;
-							pData=pNewData;
-							pData[numsSize-1]->pnode=AddNode(pData[numsSize-1], 1, root);
+							pnode=CreateNode(value, pos, &pData,&TreeNodeCount);
+							if(pos%2)qnode->right=pnode;
+							else qnode->left=pnode;
 						}else{
 							pnode->pdata->count++;
 						}
 						break;
 					case IDC_DEL:
 						value=atoi(buf);
-						RemoveTreeNode(hwnd, &root, value, pData, &numsSize);
-						//Sleep(30000);
+						RemoveTreeNode(hwnd, &root, value, &pData, &TreeNodeCount);
 						break;
 				}
 				break;
@@ -289,9 +280,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if(arrD){free(arrD);arrD=NULL;}
 		if(patharr)free(patharr);
 		if(root){DestroyTree(root);}
-		if(Data){free(Data);}
 		if(pData){free(pData);}
-		if(nums){free(nums);}
 		PostQuitMessage (0) ;
 		return 0 ;
 	}
@@ -392,4 +381,12 @@ HFONT CreateFontA(
   [in] DWORD  iPitchAndFamily,
   [in] LPCSTR pszFaceName
 );
+int SetBkMode(
+  [in] HDC hdc,
+  [in] int mode
+);
+OPAQUE - Background is filled with the current background color b
+         efore the text, hatched brush, or pen is drawn.
+TRANSPARENT - Background remains untouched.
+
 */
