@@ -2,7 +2,7 @@
 #define _TREE_TYPES_H_
 
 #define QueueMax 10000
-
+#define TreeNodeMax 10000
 struct biTreeNode;
 
 struct element{

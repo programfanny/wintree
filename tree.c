@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "tree.h"
 #include "queue.h"
-
 pBiTree AddNode(pBiTree pnode,int value,int pos, pTreeNode **pData,int *TreeSize){
 	if(pnode == NULL)return CreateNode(value,pos,pData,TreeSize);
 	else if(value == pnode->pdata->val){
@@ -30,7 +29,7 @@ pBiTree CreateNode(int value,int pos, pTreeNode **pData,int *TreeSize){
 	pTreeNode *pNewData=(pTreeNode*)malloc((*TreeSize+1)*sizeof(pTreeNode));
 	memcpy(pNewData,*pData,*TreeSize*sizeof(pTreeNode));
 	pNewData[*TreeSize]=pnode->pdata;
-	free(*pData);
+	if(*pData)free(*pData);
 	(*pData)=pNewData;
 	(*TreeSize)++;
 	pnode->left = pnode->right=NULL;
@@ -44,18 +43,81 @@ VOID DestroyTree(pBiTree pnode){
 	if(pnode){
 		DestroyTree(pnode->left);
 		DestroyTree(pnode->right);
-		free(pnode);pnode=NULL;
+		//free(pnode->pdata);
+		free(pnode);
+	}
+}
+VOID DrawTreeLine(HDC hdc,pBiTree pnode,pBiTree qnode,int pos,int width,int height){
+	if(pnode){
+		DrawTreeLine(hdc,pnode->left,qnode,pos*2,width,height);
+		float dx,dy;
+		int x, y, ss,s,d;
+		dy=height/20;	
+		d=msb(pos);
+		ss=1<<d;
+		s=pos-ss;
+		dx=width*1.0/ss;
+		x=(s+0.5)*dx; y=30+(d+1)*dy;
+		HPEN hOldPen,hRedPen;
+		hRedPen=CreatePen(PS_SOLID,2,RGB(255,0,0));
+		hOldPen=CreatePen(PS_SOLID,1,RGB(0,0,255));
+		SelectObject(hdc,hOldPen);
+		if(d>0){
+			MoveToEx(hdc,x,y,NULL);
+			LineTo(hdc,(2*(s/2+1)-1)*dx,y-dy);
+		}
+		if(pnode==qnode){
+			SelectObject(hdc,hRedPen);
+		}
+		Ellipse(hdc,x-2,y-2,x+2,y+2);
+		DeleteObject(hRedPen);
+		DrawTreeLine(hdc,pnode->right,qnode,pos*2+1,width,height);
+	}
+}
+VOID DrawTreeMap(HWND hwnd, pBiTree pnode, pBiTree qnode, int pos){
+	RECT rect;
+	GetClientRect(hwnd,&rect);
+	int width=(rect.right-rect.left)/4;
+	int height=(rect.bottom-rect.top)/4;
+	HDC hdc=GetDC(hwnd);
+	DrawTreeLine(hdc,pnode,qnode, pos,width,height);
+	if(qnode){
+		float dx,dy;
+		int x, y, ss,s,d;		
+		int upos=qnode->pdata->pos;
+		HPEN hOldPen=CreatePen(PS_SOLID,1,RGB(255,128,255));
+		SelectObject(hdc,hOldPen);
+		SelectObject(hdc,GetStockObject(HOLLOW_BRUSH));
+		dy=height/20;	
+		d=msb(upos);
+		ss=1<<d;
+		s=upos-ss;
+		dx=width*1.0/ss;
+		x=(s+0.5)*dx; y=30+(d+1)*dy;
+		Rectangle(hdc,x-dx/2-2,y-2,x+dx/2+2,y+2+5*dy);
+		DeleteObject(hOldPen);
+	}
+	ReleaseDC(hwnd,hdc);
+}
+VOID DrawBiTree(HWND hwnd, pBiTree pnode,int vpos,pTreeNode *pData,int TreeNodeCount){
+	pBiTree qnode=NULL;
+	for(int i=0;i<TreeNodeCount;i++){
+		if(pData[i]->pos==vpos){
+			qnode=pData[i]->pnode;
+			break;
+		}
+	}
+	DrawTreeMap(hwnd, pnode, qnode, 1);
+	DrawSubTree(hwnd,qnode,1);
+}
+void DrawSubTree(HWND hwnd, pBiTree pnode,int pos){
+	if(pnode){
+		DrawSubTree(hwnd,pnode->left,pos*2);
+		DrawBiTreeNode(hwnd, pnode, pos);
+		DrawSubTree(hwnd,pnode->right,pos*2+1);
 	}
 }
 
-void DrawBiTree(HWND hwnd, pBiTree pnode,int pos){
-	if(pnode){
-		DrawBiTree(hwnd,pnode->left,pos*2);
-		DrawBiTreeNode(hwnd,pnode,pos);
-		pnode->pdata->pos=pos;
-		DrawBiTree(hwnd,pnode->right,pos*2+1);
-	}
-}
 VOID DrawBiTreeNode(HWND hwnd, pBiTree pnode,int pos){
 	char buf[100];
 	HPEN hPen = CreatePen(PS_SOLID,1,RGB(255,0,0));
@@ -110,8 +172,8 @@ void DrawTreeBackground(HWND hwnd){
 		dx=(rect.right-rect.left)*1.0/ss;
 		for(int s=1;s<ss;s+=2){
 			x=s*dx;
-			//Rectangle(hdc,x-dx/2,y-dy/2,x+dx/2,y+dy/2);
-			Ellipse(hdc,x-15,y-15,x+15,y+15);
+			Rectangle(hdc,x-dx/2,y-dy/2,x+dx/2,y+dy/2);
+			Ellipse(hdc,x-15,y-15,x+15,y+15);			
 			if(dep-1>0){
 				MoveToEx(hdc,x,y-15,NULL);
 				LineTo(hdc,(2*(2*(s/4+1)-1))*dx,y-dy+15);
@@ -131,16 +193,16 @@ int* GetBitPath(int pos,int *pathlen){
 	}
 	return path;
 }
-int getTreeDepth(pBiTree pnode){
+int GetTreeDepth(pBiTree pnode){
 	int rightdep=0;
 	int leftdep=0;
 	if(pnode==NULL)return -1;
 	if(pnode->left!=NULL)
-		leftdep=getTreeDepth(pnode->left);
+		leftdep=GetTreeDepth(pnode->left);
 	else
 		leftdep=-1;
 	if(pnode->right!=NULL)
-		rightdep=getTreeDepth(pnode->right);
+		rightdep=GetTreeDepth(pnode->right);
 	else
 		rightdep=-1;
 	return (rightdep>leftdep)?rightdep+1:leftdep+1;
@@ -165,11 +227,9 @@ pBiTree SearchTreeNode( pBiTree pnode, pBiTree *parentNode, int value, int *pos 
 	return pnode;
 }
 VOID InitTree(pBiTree *T, int *size, pTreeNode **pData, int *TreeSize){
-	*size = rand()%30+1;
-	pBiTree qnode,pnode;
-	int pos;
-	int value;
-
+	pBiTree qnode, pnode;
+	int pos, value;
+	*T=NULL;*size = rand()%30+1;*pData=NULL;*TreeSize=0;
 	for(int i=0;i<*size;i++){
 		value=rand()%50;
 		qnode=pnode=*T;
@@ -180,7 +240,7 @@ VOID InitTree(pBiTree *T, int *size, pTreeNode **pData, int *TreeSize){
 			if(i==0) *T=pnode;
 			else if(pos%2) qnode->right=pnode;
 				else qnode->left=pnode;			
-		}
+		}else{pnode->pdata->count++;}
 	}
 }
 
@@ -196,7 +256,7 @@ void postList(pBiTree pnode, int* arr, int* count){
 	}
 }
 int *postOrderTraversal(pBiTree root, int* returnSize) {
-	int* arr = (int *)malloc(sizeof(int) * 100);
+	int* arr = (int *)malloc(sizeof(int) *TreeNodeMax);
 	int count = 0;
 	postList(root, arr, &count);
 	*returnSize = count;
@@ -211,7 +271,7 @@ void innerList(pBiTree pnode, int* arr, int* count){
 }
 
 int *innerOrderTraversal(pBiTree root, int* returnSize) {
-	int* arr = (int *)malloc(sizeof(int) * 100);
+	int* arr = (int *)malloc(sizeof(int) * TreeNodeMax);
 	int count = 0;
 	innerList(root, arr, &count);
 	*returnSize = count;
@@ -225,14 +285,14 @@ void preList(pBiTree pnode, int* arr, int* count){
 	}
 }
 int *preOrderTraversal(pBiTree root, int* returnSize) {
-	int* arr = (int *)malloc(sizeof(int) * 100);
+	int* arr = (int *)malloc(sizeof(int) * TreeNodeMax);
 	int count = 0;
 	preList(root, arr, &count);
 	*returnSize = count;
 	return arr;
 }
 int *layerOrderTraversal(pBiTree pnode,int *returnSize){
-	int* arr = (int *)malloc(sizeof(int) * 200);
+	int* arr = (int *)malloc(sizeof(int) * TreeNodeMax);
 	int count = 0;
 	Queue seq;
 	seq = InitQueue();

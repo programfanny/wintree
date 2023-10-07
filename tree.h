@@ -7,13 +7,14 @@
 pBiTree AddNode(pBiTree pnode,int value,int pos, pTreeNode **pData,int *TreeSize);
 pBiTree CreateNode(int value,int pos, pTreeNode **pData,int *TreeSize);
 VOID DestroyTree(pBiTree pnode);
-
-void DrawBiTree(HWND hwnd, pBiTree pnode,int pos);
+VOID DrawBiTree(HWND hwnd, pBiTree pnode,int vpos,pTreeNode *pData,int TreeNodeCount);
+void DrawSubTree(HWND hwnd, pBiTree pnode,int vpos);
 VOID DrawBiTreeNode(HWND hwnd, pBiTree pnode,int pos);
+VOID DrawTreeMap(HWND hwnd, pBiTree pnode,pBiTree qnode,int pos);
 void DrawTreeBackground(HWND hwnd);
 
 int* GetBitPath(int pos,int *pathlen);
-int getTreeDepth(pBiTree pnode);
+int GetTreeDepth(pBiTree pnode);
 
 VOID InitTree(pBiTree *T, int *size, pTreeNode **pData, int *TreeSize);
 

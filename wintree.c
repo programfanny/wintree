@@ -75,13 +75,13 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int s,d,ss,pos,num,value;
 	static POINT *patharr;
 	static int pathlen;
-	static RECT rect ;
+	static RECT rect;
 	static HINSTANCE hInstance; 
-	static int numsSize,TreeNodeCount;
+	static int numsSize,TreeNodeCount,vpos;
 	static int *arrA, *arrB, *arrC, *arrD;
 	static int returnSizeA = 0,returnSizeB = 0,returnSizeC = 0,returnSizeD = 0;
 	static pBiTree root=NULL,pnode,qnode;
-	//static int depth;
+	static int depth;
 	static pTreeNode *pData;
 	static BOOL ti,showtree;
 	switch (message)
@@ -94,19 +94,22 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
     		SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		}
-		//srand(time(0));
-		TreeNodeCount=0;
-		InitTree(&root,  &numsSize, &pData, &TreeNodeCount);
-
-		ti=FALSE,showtree=TRUE;
+		srand(time(0));
+		InitTree(&root, &numsSize, &pData, &TreeNodeCount);
+		depth=GetTreeDepth(root);
+		ti=FALSE,showtree=TRUE,vpos=1;
 		return 0 ;
 	case WM_PAINT:
-		hdc = BeginPaint (hwnd, &ps) ;
+		hdc=BeginPaint (hwnd, &ps) ;
 		GetClientRect(hwnd,&rect);
+		sprintf(buf,"Tree Node Count : %d",TreeNodeCount);
+		TextOut(hdc,30,0,buf,strlen(buf));
+		/*
 		for(int i=0;i<TreeNodeCount;i++){
 			sprintf(buf,"%p %d %d %d",pData[i],i,pData[i]->val,pData[i]->pos);
 			TextOut(hdc,30,30+i*20,buf,strlen(buf));
 		}
+		*/
 		SetTextColor(hdc,RGB(0,180,250));	
 		DispArray(hdc,650,30," pre ",arrA,returnSizeA);
 		DispArray(hdc,700,30,"inner",arrB,returnSizeB);
@@ -117,11 +120,10 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			TextOut(hdc,800,50+i*20,buf,strlen(buf));
 			sprintf(buf,"[%d] ",arrD[2*i+1]);
 			TextOut(hdc,830,50+i*20,buf,strlen(buf));
-		}
-		
+		}		
 		DrawTreeBackground(hwnd);
-		if(showtree)DrawBiTree(hwnd,root,1);
-
+		//DrawTreeMap(hwnd, root, 1);
+		if(showtree)DrawBiTree(hwnd,root,vpos,pData,TreeNodeCount);
 		EndPaint (hwnd, &ps) ;
 		return 0 ;
 	case WM_TIMER:
@@ -146,27 +148,42 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				ti=!ti;
 				break;	
 			case VK_RETURN:
-				//MessageBox(NULL,"New Tree","OKOK",MB_OK);
 				if(arrA){free(arrA);}
 				if(arrB){free(arrB);}
 				if(arrC){free(arrC);}
 				if(arrD){free(arrD);}
-				if(root){DestroyTree(root);}
-				if(pData){free(pData);pData=NULL;}
-				InitTree(&root,  &numsSize, &pData, &TreeNodeCount);
-				ti=TRUE;showtree=TRUE;
+				if(root){DestroyTree(root);root=NULL;}
+				if(pData){
+					for(int i=0;i<TreeNodeCount;i++)free(pData[i]);
+					free(pData);
+				}
+				InitTree( &root,  &numsSize, &pData, &TreeNodeCount );
+				depth=GetTreeDepth(root);
+				ti=TRUE;showtree=TRUE,vpos=1;
+				break;
 			case VK_F5:
 				arrA =   preOrderTraversal(root, &returnSizeA);
 				arrB = innerOrderTraversal(root, &returnSizeB);
 				arrC =  postOrderTraversal(root, &returnSizeC);
 				arrD = layerOrderTraversal(root, &returnSizeD);			
-				break;		
+				break;
+			case VK_UP:
+				if(vpos>2)vpos/=2;else vpos=1;
+				break;
+			case VK_LEFT:
+				if(msb(vpos)<depth)vpos=vpos*2;
+				break;
+			case VK_RIGHT:
+				if(msb(vpos)<depth)vpos=vpos*2+1;
+				break;
+			case VK_HOME:
+				vpos=1;
+				break;
 		}
 		InvalidateRect(hwnd,&rect,TRUE);
 		return 0;	
 	case WM_LBUTTONDOWN:
 		x=LOWORD(lParam);y=HIWORD(lParam);
-
 		if(650<x && x<700 && 30<y && y<50){
 			PostMessage(hwnd,WM_COMMAND,IDM_TREE_PRE,0);
 		}else if(700<x && x<750 && 30<y && y<50){
@@ -189,7 +206,6 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				for(int i=0;i<TreeNodeCount;i++){
 					if(pData[i]->pos==pos){num=i;break;}
 				}
-				//pnode = SearchTreeNode(root,nodeValue);
 				Ellipse(hdc, x0-10, y0+10, x0-10, y0+10);
 				BitBlt(hdc,300,0,400,20,hdc,750,0,SRCCOPY);
 				if(num>=0){
@@ -247,10 +263,12 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 						}else{
 							pnode->pdata->count++;
 						}
+						depth=GetTreeDepth(root);
 						break;
 					case IDC_DEL:
 						value=atoi(buf);
-						RemoveTreeNode(hwnd, &root, value, &pData, &TreeNodeCount);
+						RemoveTreeNode(&root, value, &pData, &TreeNodeCount);
+						depth=GetTreeDepth(root);
 						break;
 				}
 				break;
@@ -326,7 +344,6 @@ BOOL CALLBACK TreeNodeDlgProc (HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	}	
 	return FALSE;	
 }
-
 /*
 typedef struct tagCREATESTRUCTA {
   LPVOID    lpCreateParams;
