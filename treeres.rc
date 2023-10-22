@@ -39,6 +39,14 @@ BEGIN
 				MENUITEM "layerOrderTraversal", IDM_TREE_LAYER
 
 			END
+		POPUP "&Rotation"
+			BEGIN
+				MENUITEM "Left-Left Rotation",  IDM_TREE_LL
+				MENUITEM "Left-Right Rotation", IDM_TREE_LR
+				MENUITEM "Right-Left Rotation", IDM_TREE_RL
+				MENUITEM "Right-Right Rotation", IDM_TREE_RR
+			END	
+
 		MENUITEM "&Exit", IDM_TREE_EXIT
 	END	
 END

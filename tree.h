@@ -1,33 +1,28 @@
+//tree.h
 #ifndef _TREE_H_
-#define _TREE_H_
-
+#define _TREE__H_
 #include <windows.h>
 #include "treetype.h"
 
-pBiTree AddNode(pBiTree pnode,int value,int pos, pTreeNode **pData,int *TreeSize);
-pBiTree CreateNode(int value,int pos, pTreeNode **pData,int *TreeSize);
-VOID DestroyTree(pBiTree pnode);
-VOID DrawBiTree(HWND hwnd, pBiTree pnode,int vpos,pTreeNode *pData,int TreeNodeCount);
-void DrawSubTree(HWND hwnd, pBiTree pnode,int vpos);
-VOID DrawBiTreeNode(HWND hwnd, pBiTree pnode,int pos);
-VOID DrawTreeMap(HWND hwnd, pBiTree pnode,pBiTree qnode,int pos);
-void DrawTreeBackground(HWND hwnd);
 
-int* GetBitPath(int pos,int *pathlen);
-int GetTreeDepth(pBiTree pnode);
+int getHeight(pBiTree node);
+int maxint(int a, int b);
+void rrRotation(pBiTree node,pBiTree *root);
+void llRotation(pBiTree node,pBiTree *root);
+void avlInsert(BiTree** T, int data, int *TreeSize);
+void avlDelete(pBiTree *T, int data, int *TreeSize);
+void preOrder(pBiTree T);
+void innOrder(pBiTree T);
+void posOrder(pBiTree T);
+void InitTree(pBiTree *pnode, int **nums, int *numsSize, pTreeNode **pData, int *TreeSize,int operate);
+void DestroyTree(pBiTree T);
 
-VOID InitTree(pBiTree *T, int *size, pTreeNode **pData, int *TreeSize);
 
-unsigned msb(unsigned x);
-int *layerOrderTraversal(pBiTree pnode,int *returnSize);
 int *postOrderTraversal(pBiTree root, int* returnSize);
 int *innerOrderTraversal(pBiTree root, int* returnSize);
-int *preOrderTraversal(pBiTree root, int* returnSize);
+int *preOrderTraversal(pBiTree root, int* returnSize) ;
+int *layerOrderTraversal(pBiTree pnode,int *returnSize);
 
-VOID  RemoveTreeNode(pBiTree *T, int value, pTreeNode **pData,int *size);
-
-pBiTree SearchTreeNode(pBiTree pnode,pBiTree *parentNode,int value,int *pos);
-
-POINT* ShowPath(HWND hwnd, int pos,int *pathlen);
+unsigned msb(unsigned x);
 
 #endif
